@@ -2,8 +2,8 @@ package ru.ssau.patternpractice.model;
 
 
 import lombok.*;
-import ru.ssau.patternpractice.exception.ModelAlreadyExistsException;
-import ru.ssau.patternpractice.exception.ModelNotFoundException;
+import ru.ssau.patternpractice.exception.DuplicateModelNameException;
+import ru.ssau.patternpractice.exception.NoSuchModelNameException;
 
 import java.util.*;
 import java.util.stream.IntStream;
@@ -37,7 +37,7 @@ public class Automobile implements Transport {
         if (result.isPresent()) {
             return result.get().getCost();
         } else {
-            throw new ModelNotFoundException();
+            throw new NoSuchModelNameException();
         }
     }
 
@@ -48,14 +48,14 @@ public class Automobile implements Transport {
                 return;
             }
         }
-        throw new ModelNotFoundException();
+        throw new NoSuchModelNameException();
     }
 
     public void addNewModel(String name, Double cost) {
         Model newModel = new Model(name, cost);
         boolean isPresent = Arrays.stream(models).anyMatch(model -> model.equals(newModel));
         if (isPresent) {
-            throw new ModelAlreadyExistsException();
+            throw new DuplicateModelNameException();
         }
         models = Arrays.copyOf(models, models.length+1);
         models[models.length-1] = newModel;
@@ -65,7 +65,7 @@ public class Automobile implements Transport {
         Model targetModel = new Model(name, cost);
         int index = IntStream.range(0, models.length).filter(i -> models[i].equals(targetModel)).findFirst().orElse(-1);
         if (index == -1) {
-            throw new ModelNotFoundException();
+            throw new NoSuchModelNameException();
         }
         Model[] modelsCopy = Arrays.copyOf(models, models.length);
         models = new Model[models.length-1];
