@@ -1,6 +1,7 @@
 package ru.ssau.patternpractice;
 
 import ru.ssau.patternpractice.config.AppConfig;
+import ru.ssau.patternpractice.utility.TransportAnalytic;
 
 public class Main {
     public static void main(String[] args) {

@@ -4,6 +4,7 @@ import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import ru.ssau.patternpractice.exception.DuplicateModelNameException;
 import ru.ssau.patternpractice.exception.NoSuchModelNameException;
 
 import java.util.ArrayList;
@@ -106,7 +107,7 @@ public class Motorcycle implements Transport {
     }
 
     @Override
-    public Double getModelCost(String modelName) {
+    public Double getModelCost(String modelName) throws NoSuchModelNameException {
         for (Model model : modelHead) {
             if (model.name.equals(modelName)) {
                 return model.cost;
@@ -116,7 +117,7 @@ public class Motorcycle implements Transport {
     }
 
     @Override
-    public void setModelCost(String modelName, Double modelCost) {
+    public void setModelCost(String modelName, Double modelCost) throws NoSuchModelNameException {
         for (Model model : modelHead) {
             if (model.name.equals(modelName)) {
                 model.cost = modelCost;
@@ -127,7 +128,12 @@ public class Motorcycle implements Transport {
     }
 
     @Override
-    public void addNewModel(String name, Double cost) {
+    public void addNewModel(String name, Double cost) throws DuplicateModelNameException {
+        for (Model model : modelHead) {
+            if (model.name.equals(name) && model.cost.equals(cost)) {
+                throw new DuplicateModelNameException();
+            }
+        }
         Model model = new Model(name, cost, modelHead, modelHead.prev);
         modelHead.prev.next = model;
         modelHead.prev = model;
@@ -135,7 +141,7 @@ public class Motorcycle implements Transport {
     }
 
     @Override
-    public void deleteModel(String name, Double cost) {
+    public void deleteModel(String name, Double cost) throws NoSuchModelNameException {
         Iterator<Model> it = modelHead.iterator();
         while (it.hasNext()) {
             Model model = it.next();
@@ -152,4 +158,6 @@ public class Motorcycle implements Transport {
     public int getModelsAmount() {
         return size;
     }
+
+
 }

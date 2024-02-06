@@ -32,7 +32,7 @@ public class Automobile implements Transport {
         return Arrays.stream(models).map(Model::getCost).toList();
     }
 
-    public Double getModelCost(String modelName) {
+    public Double getModelCost(String modelName) throws NoSuchModelNameException {
         Optional<Model> result = Arrays.stream(models).filter(model -> Objects.equals(model.getName(), modelName)).findFirst();
         if (result.isPresent()) {
             return result.get().getCost();
@@ -41,7 +41,7 @@ public class Automobile implements Transport {
         }
     }
 
-    public void setModelCost(String modelName, Double cost) {
+    public void setModelCost(String modelName, Double cost) throws NoSuchModelNameException {
         for (Model model : models) {
             if (model.getName().equals(modelName)) {
                 model.setCost(cost);
@@ -51,7 +51,7 @@ public class Automobile implements Transport {
         throw new NoSuchModelNameException();
     }
 
-    public void addNewModel(String name, Double cost) {
+    public void addNewModel(String name, Double cost) throws DuplicateModelNameException {
         Model newModel = new Model(name, cost);
         boolean isPresent = Arrays.stream(models).anyMatch(model -> model.equals(newModel));
         if (isPresent) {
@@ -61,7 +61,7 @@ public class Automobile implements Transport {
         models[models.length-1] = newModel;
     }
 
-    public void deleteModel(String name, Double cost) {
+    public void deleteModel(String name, Double cost) throws NoSuchModelNameException {
         Model targetModel = new Model(name, cost);
         int index = IntStream.range(0, models.length).filter(i -> models[i].equals(targetModel)).findFirst().orElse(-1);
         if (index == -1) {
@@ -78,6 +78,4 @@ public class Automobile implements Transport {
     public int getModelsAmount() {
         return models.length;
     }
-
-
 }
