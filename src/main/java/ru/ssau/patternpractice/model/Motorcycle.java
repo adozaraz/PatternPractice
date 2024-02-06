@@ -21,9 +21,18 @@ public class Motorcycle implements Transport {
     private Model modelHead;
     private int size = 0;
 
-    {
-        modelHead.next = modelHead; //TODO: переместить в конструктор
-        modelHead.prev = modelHead;
+    public Motorcycle(String brand, String[] models, Double[] costs) {
+        if (models.length != costs.length) {
+            throw new IllegalArgumentException("Количество моделей должно совпадать с количеством стоимостей");
+        }
+        this.brand = brand;
+        for (int i = 0; i < models.length; ++i) {
+            try {
+                this.addNewModel(models[i], costs[i]);
+            } catch (DuplicateModelNameException e) {
+                System.out.println(e.getMessage());
+            }
+        }
     }
 
     @EqualsAndHashCode
@@ -134,9 +143,15 @@ public class Motorcycle implements Transport {
                 throw new DuplicateModelNameException();
             }
         }
-        Model model = new Model(name, cost, modelHead, modelHead.prev);
-        modelHead.prev.next = model;
-        modelHead.prev = model;
+        if (modelHead == null) {
+            modelHead = new Model(name, cost, null, null);
+            modelHead.prev = modelHead;
+            modelHead.next = modelHead;
+        } else {
+            Model model = new Model(name, cost, modelHead, modelHead.prev);
+            modelHead.prev.next = model;
+            modelHead.prev = model;
+        }
         ++size;
     }
 
