@@ -14,7 +14,7 @@ import java.util.NoSuchElementException;
 
 @Getter
 @Setter
-public class Motorcycle implements Transport {
+public class Motorcycle implements Transport, Cloneable {
     private String brand;
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
@@ -32,6 +32,29 @@ public class Motorcycle implements Transport {
             } catch (DuplicateModelNameException e) {
                 System.out.println(e.getMessage());
             }
+        }
+    }
+
+    @Override
+    public Motorcycle clone() {
+        try {
+            Motorcycle clone = (Motorcycle) super.clone();
+            clone.modelHead = new Model(modelHead.name, modelHead.cost);
+            clone.modelHead.next = clone.modelHead;
+            clone.modelHead.prev = clone.modelHead;
+            Iterator<Model> origIter = modelHead.iterator();
+            if (origIter.hasNext()) origIter.next();
+            while (origIter.hasNext()) {
+                Model toAdd = origIter.next();
+                try {
+                    clone.addNewModel(toAdd.name, toAdd.cost);
+                } catch (DuplicateModelNameException e) {
+                    System.out.println(e.getMessage());
+                }
+            }
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
         }
     }
 
