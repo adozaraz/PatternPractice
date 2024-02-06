@@ -10,18 +10,56 @@ import java.util.stream.IntStream;
 
 @Getter
 @Setter
-public class Automobile implements Transport {
+public class Automobile implements Transport, Cloneable {
     private String brand;
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private Model[] models;
+
+    @Override
+    public Automobile clone() {
+        try {
+            Automobile copy = (Automobile) super.clone();
+            copy.models = models.clone();
+            for (int i = 0; i < models.length; ++i) {
+                copy.models[i] = copy.models[i].clone();
+            }
+            return copy;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
+    }
+
     @Getter
     @Setter
     @EqualsAndHashCode
     @AllArgsConstructor
-    private static class Model {
+    private static class Model implements Cloneable {
         private String name;
         private Double cost;
+
+        @Override
+        public Model clone() {
+            try {
+                return (Model) super.clone();
+            } catch (CloneNotSupportedException e) {
+                throw new AssertionError();
+            }
+        }
+    }
+
+    public Automobile(String brand, String[] models, Double[] costs) {
+        if (models.length != costs.length) {
+            throw new IllegalArgumentException("Количество моделей должно совпадать с количеством стоимостей");
+        }
+        this.brand = brand;
+        for (int i = 0; i < models.length; ++i) {
+            try {
+                this.addNewModel(models[i], costs[i]);
+            } catch (DuplicateModelNameException e) {
+                System.out.println(e.getMessage());
+            }
+        }
     }
 
     public List<String> getAllModelsNames() {
