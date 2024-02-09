@@ -21,7 +21,7 @@ public class TransportAnalytic {
         List<String> modelNames = transport.getAllModelsNames();
         List<Double> modelCosts = transport.getAllModelsCost();
         for (int i = 0; i < transport.getModelsAmount(); ++i) {
-            System.out.printf("Model: %s, Cost: %f\n", modelNames.get(i), modelCosts.get(i));
+            System.out.printf("Model: %s, Cost: %f%n", modelNames.get(i), modelCosts.get(i));
         }
     }
 

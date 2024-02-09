@@ -16,7 +16,7 @@ public class Motorcycle implements Transport, Cloneable {
 
     public Motorcycle(String brand, int size, double minCost, double maxCost) throws DuplicateModelNameException {
         Random r = new Random();
-        this.size = size;
+        this.size = 0;
         this.brand = brand;
         for (int i = 0; i < size; ++i) {
             this.addNewModel(brand + i, minCost + (maxCost - minCost) * r.nextDouble());
@@ -71,6 +71,7 @@ public class Motorcycle implements Transport, Cloneable {
         }
         if (target != null) {
             target.name = newModel;
+            return;
         }
         throw new NoSuchModelNameException();
     }
@@ -81,9 +82,9 @@ public class Motorcycle implements Transport, Cloneable {
 
     private static class Model implements Iterable<Model> {
         String name;
-        Double cost = Double.NaN;
-        Model next = null;
-        Model prev = null;
+        Double cost;
+        Model next;
+        Model prev;
 
         public Model(String name, Double cost) {
             this(name, cost, null, null);
@@ -100,11 +101,25 @@ public class Motorcycle implements Transport, Cloneable {
         public Iterator<Model> iterator() {
             return new ModelIterator(this);
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Model model = (Model) o;
+            return Objects.equals(name, model.name) && Objects.equals(cost, model.cost) && next == model.next && prev == model.prev;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, cost);
+        }
     }
 
     private static class ModelIterator implements Iterator<Model> {
         private final Model head;
         private Model iterator;
+        private boolean fullCycle = true;
 
         public ModelIterator(Model head) {
             this.head = head;
@@ -113,7 +128,7 @@ public class Motorcycle implements Transport, Cloneable {
 
         @Override
         public boolean hasNext() {
-            return !iterator.next.equals(head);
+            return fullCycle;
         }
 
         @Override
@@ -123,21 +138,8 @@ public class Motorcycle implements Transport, Cloneable {
             }
             Model result = iterator;
             iterator = iterator.next;
+            if (iterator.equals(head)) fullCycle = false;
             return result;
-        }
-
-        @Override
-        public void remove() {
-            if (iterator.equals(head)) {
-                iterator.next = null;
-                iterator.prev = null;
-                iterator = null;
-            } else {
-                iterator.prev.next = iterator.next;
-                iterator.next.prev = iterator.prev;
-                iterator.next = null;
-                iterator.prev = null;
-            }
         }
     }
 
@@ -182,16 +184,16 @@ public class Motorcycle implements Transport, Cloneable {
 
     @Override
     public void addNewModel(String name, Double cost) throws DuplicateModelNameException {
-        for (Model model : modelHead) {
-            if (model.name.equals(name) && model.cost.equals(cost)) {
-                throw new DuplicateModelNameException();
-            }
-        }
         if (modelHead == null) {
             modelHead = new Model(name, cost, null, null);
             modelHead.prev = modelHead;
             modelHead.next = modelHead;
         } else {
+            for (Model model : modelHead) {
+                if (model.name.equals(name) && model.cost.equals(cost)) {
+                    throw new DuplicateModelNameException();
+                }
+            }
             Model model = new Model(name, cost, modelHead, modelHead.prev);
             modelHead.prev.next = model;
             modelHead.prev = model;
@@ -201,11 +203,12 @@ public class Motorcycle implements Transport, Cloneable {
 
     @Override
     public void deleteModel(String name, Double cost) throws NoSuchModelNameException {
-        Iterator<Model> it = modelHead.iterator();
-        while (it.hasNext()) {
-            Model model = it.next();
+        for (Model model : modelHead) {
             if (model.name.equals(name) && model.cost.equals(cost)) {
-                it.remove();
+                model.next.prev = model.prev;
+                model.prev.next = model.next;
+                model.next = null;
+                model.prev = null;
                 --size;
                 return;
             }

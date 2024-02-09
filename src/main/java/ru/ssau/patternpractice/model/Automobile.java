@@ -12,12 +12,33 @@ public class Automobile implements Transport, Cloneable {
     private Model[] models;
     private int size;
 
+    private int arraySizeIncrease;
+
+    public Automobile(String brand, Integer size) {
+        this(brand, size, 10000.0, 20000.0, 10);
+    }
+
+    public Automobile(String brand, Integer size, int arraySizeIncrease) {
+        this(brand, size, 10000.0, 20000.0, arraySizeIncrease);
+    }
+
+    public Automobile(String brand, int size, double minCost, double maxCost, int arraySizeIncrease) {
+        Random r = new Random();
+        this.brand = brand;
+        this.size = size;
+        this.arraySizeIncrease = arraySizeIncrease;
+        this.models = new Model[size+arraySizeIncrease];
+        for (int i = 0; i < size; ++i) {
+            models[i] = new Model(brand + i, minCost + (maxCost - minCost) * r.nextDouble());
+        }
+    }
+
     @Override
     public Automobile clone() {
         try {
             Automobile copy = (Automobile) super.clone();
             copy.models = models.clone();
-            for (int i = 0; i < models.length; ++i) {
+            for (int i = 0; i < size; ++i) {
                 copy.models[i] = copy.models[i].clone();
             }
             return copy;
@@ -86,59 +107,30 @@ public class Automobile implements Transport, Cloneable {
             this.cost = cost;
         }
 
-        public boolean equals(final Object o) {
-            if (o == this) return true;
-            if (!(o instanceof Model)) return false;
-            final Model other = (Model) o;
-            if (!other.canEqual((Object) this)) return false;
-            final Object this$name = this.getName();
-            final Object other$name = other.getName();
-            if (this$name == null ? other$name != null : !this$name.equals(other$name)) return false;
-            final Object this$cost = this.getCost();
-            final Object other$cost = other.getCost();
-            if (this$cost == null ? other$cost != null : !this$cost.equals(other$cost)) return false;
-            return true;
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Model model = (Model) o;
+            return Objects.equals(name, model.name) && Objects.equals(cost, model.cost);
         }
 
-        protected boolean canEqual(final Object other) {
-            return other instanceof Model;
-        }
-
+        @Override
         public int hashCode() {
-            final int PRIME = 59;
-            int result = 1;
-            final Object $name = this.getName();
-            result = result * PRIME + ($name == null ? 43 : $name.hashCode());
-            final Object $cost = this.getCost();
-            result = result * PRIME + ($cost == null ? 43 : $cost.hashCode());
-            return result;
-        }
-    }
-
-    public Automobile(String brand, Integer size) {
-        this(brand, size, 10000.0, 20000.0);
-    }
-
-    public Automobile(String brand, Integer size, double minCost, double maxCost) {
-        Random r = new Random();
-        this.brand = brand;
-        this.size = size;
-        this.models = new Model[size];
-        for (int i = 0; i < size; ++i) {
-            models[i] = new Model(brand + i, minCost + (maxCost - minCost) * r.nextDouble());
+            return Objects.hash(name, cost);
         }
     }
 
     public List<String> getAllModelsNames() {
-        return Arrays.stream(models).map(Model::getName).toList();
+        return Arrays.stream(models).filter(Objects::nonNull).map(Model::getName).toList();
     }
 
     public List<Double> getAllModelsCost() {
-        return Arrays.stream(models).map(Model::getCost).toList();
+        return Arrays.stream(models).filter(Objects::nonNull).map(Model::getCost).toList();
     }
 
     public Double getModelCost(String modelName) throws NoSuchModelNameException {
-        Optional<Model> result = Arrays.stream(models).filter(model -> Objects.equals(model.getName(), modelName)).findFirst();
+        Optional<Model> result = Arrays.stream(models).filter(Objects::nonNull).filter(model -> Objects.equals(model.getName(), modelName)).findFirst();
         if (result.isPresent()) {
             return result.get().getCost();
         } else {
@@ -148,7 +140,7 @@ public class Automobile implements Transport, Cloneable {
 
     public void setModelCost(String modelName, Double cost) throws NoSuchModelNameException {
         for (Model model : models) {
-            if (model.getName().equals(modelName)) {
+            if (model != null && model.getName().equals(modelName)) {
                 model.setCost(cost);
                 return;
             }
@@ -158,12 +150,14 @@ public class Automobile implements Transport, Cloneable {
 
     public void addNewModel(String name, Double cost) throws DuplicateModelNameException {
         Model newModel = new Model(name, cost);
-        boolean isPresent = Arrays.stream(models).anyMatch(model -> model.equals(newModel));
+        boolean isPresent = Arrays.stream(models).filter(Objects::nonNull).anyMatch(model -> model.equals(newModel));
         if (isPresent) {
             throw new DuplicateModelNameException();
         }
-        models = Arrays.copyOf(models, models.length + 1);
-        models[models.length - 1] = newModel;
+        if (size >= models.length) {
+            resizeArray();
+        }
+        models[size++] = newModel;
     }
 
     public void deleteModel(String name, Double cost) throws NoSuchModelNameException {
@@ -172,15 +166,24 @@ public class Automobile implements Transport, Cloneable {
         if (index == -1) {
             throw new NoSuchModelNameException();
         }
-        Model[] modelsCopy = Arrays.copyOf(models, models.length);
-        models = new Model[models.length - 1];
-        System.arraycopy(modelsCopy, 0, models, 0, index);
-        if (index != modelsCopy.length - 1) {
+        if (index == size - 1) {
+            models[index] = null;
+        } else if (index == 0) {
+            System.arraycopy(models, 1, models, 0, size-1);
+        } else {
+            Model[] modelsCopy = Arrays.copyOf(models, models.length);
+            models = new Model[models.length - 1];
+            System.arraycopy(modelsCopy, 0, models, 0, index);
             System.arraycopy(modelsCopy, index + 1, models, index, modelsCopy.length - index - 1);
         }
+        --size;
     }
 
     public int getModelsAmount() {
-        return models.length;
+        return size;
+    }
+
+    private void resizeArray() {
+        models = Arrays.copyOf(models, size+arraySizeIncrease);
     }
 }
