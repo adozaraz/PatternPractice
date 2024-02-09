@@ -1,37 +1,25 @@
 package ru.ssau.patternpractice.model;
 
-import lombok.AccessLevel;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
 import ru.ssau.patternpractice.exception.DuplicateModelNameException;
 import ru.ssau.patternpractice.exception.NoSuchModelNameException;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
-@Getter
-@Setter
 public class Motorcycle implements Transport, Cloneable {
     private String brand;
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private Model modelHead;
     private int size = 0;
 
-    public Motorcycle(String brand, String[] models, Double[] costs) {
-        if (models.length != costs.length) {
-            throw new IllegalArgumentException("Количество моделей должно совпадать с количеством стоимостей");
-        }
+    public Motorcycle(String brand, int size) throws DuplicateModelNameException {
+        this(brand, size, 10000.0, 20000.0);
+    }
+
+    public Motorcycle(String brand, int size, double minCost, double maxCost) throws DuplicateModelNameException {
+        Random r = new Random();
+        this.size = size;
         this.brand = brand;
-        for (int i = 0; i < models.length; ++i) {
-            try {
-                this.addNewModel(models[i], costs[i]);
-            } catch (DuplicateModelNameException e) {
-                System.out.println(e.getMessage());
-            }
+        for (int i = 0; i < size; ++i) {
+            this.addNewModel(brand + i, minCost + (maxCost - minCost) * r.nextDouble());
         }
     }
 
@@ -58,7 +46,39 @@ public class Motorcycle implements Transport, Cloneable {
         }
     }
 
-    @EqualsAndHashCode
+    public String getBrand() {
+        return this.brand;
+    }
+
+    public int getSize() {
+        return this.size;
+    }
+
+    public void setBrand(String brand) {
+        this.brand = brand;
+    }
+
+    @Override
+    public void setModelName(String oldModel, String newModel) throws NoSuchModelNameException, DuplicateModelNameException {
+        Model target = null;
+        for (Model model : modelHead) {
+            if (model.name.equals(newModel)) {
+                throw new DuplicateModelNameException();
+            }
+            if (model.name.equals(oldModel) && target == null) {
+                target = model;
+            }
+        }
+        if (target != null) {
+            target.name = newModel;
+        }
+        throw new NoSuchModelNameException();
+    }
+
+    public void setSize(int size) {
+        this.size = size;
+    }
+
     private static class Model implements Iterable<Model> {
         String name;
         Double cost = Double.NaN;
@@ -75,6 +95,7 @@ public class Motorcycle implements Transport, Cloneable {
             this.next = next;
             this.prev = prev;
         }
+
         @Override
         public Iterator<Model> iterator() {
             return new ModelIterator(this);

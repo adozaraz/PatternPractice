@@ -1,15 +1,16 @@
 package ru.ssau.patternpractice.utility;
 
-import lombok.experimental.UtilityClass;
-import ru.ssau.patternpractice.model.AutoFactory;
+import ru.ssau.patternpractice.exception.DuplicateModelNameException;
+import ru.ssau.patternpractice.model.factory.AutoFactory;
 import ru.ssau.patternpractice.model.Transport;
-import ru.ssau.patternpractice.model.TransportFactory;
+import ru.ssau.patternpractice.model.factory.TransportFactory;
 
 import java.util.List;
 
-@UtilityClass
 public class TransportAnalytic {
     private static TransportFactory factory = new AutoFactory();
+
+    private TransportAnalytic() {}
 
     public static Double modelsMean(Transport transport) {
         List<Double> modelsCost = transport.getAllModelsCost();
@@ -20,7 +21,7 @@ public class TransportAnalytic {
         List<String> modelNames = transport.getAllModelsNames();
         List<Double> modelCosts = transport.getAllModelsCost();
         for (int i = 0; i < transport.getModelsAmount(); ++i) {
-            System.out.printf("Model: %s, Cost: %f", modelNames.get(i), modelCosts.get(i));
+            System.out.printf("Model: %s, Cost: %f\n", modelNames.get(i), modelCosts.get(i));
         }
     }
 
@@ -28,7 +29,7 @@ public class TransportAnalytic {
         factory = transportFactory;
     }
 
-    public static Transport createInstance(String name, int size) {
+    public static Transport createInstance(String name, int size) throws DuplicateModelNameException {
         return factory.createInstance(name, size);
     }
 }
