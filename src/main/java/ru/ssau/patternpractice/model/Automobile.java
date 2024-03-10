@@ -3,7 +3,11 @@ package ru.ssau.patternpractice.model;
 
 import ru.ssau.patternpractice.exception.DuplicateModelNameException;
 import ru.ssau.patternpractice.exception.NoSuchModelNameException;
+import ru.ssau.patternpractice.model.command.PrintCommand;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -13,6 +17,8 @@ public class Automobile implements Transport, Cloneable {
     private int size;
 
     private int arraySizeIncrease;
+
+    private PrintCommand printCommand;
 
     public Automobile(String brand, Integer size) {
         this(brand, size, 10000.0, 20000.0, 10);
@@ -193,5 +199,13 @@ public class Automobile implements Transport, Cloneable {
 
     public Iterator<Model> iterator() {
         return Arrays.stream(models).iterator();
+    }
+
+    public void print(OutputStream outputStream) throws IOException {
+        this.printCommand.print(this.getAllModelsNames(), outputStream);
+    }
+
+    public void setPrintCommand(PrintCommand printCommand) {
+        this.printCommand = printCommand;
     }
 }
