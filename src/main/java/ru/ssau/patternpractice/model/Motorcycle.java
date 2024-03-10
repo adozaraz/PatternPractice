@@ -114,6 +114,10 @@ public class Motorcycle implements Transport, Cloneable {
         public int hashCode() {
             return Objects.hash(name, cost);
         }
+
+        public String toString() {
+            return name + ": " + cost;
+        }
     }
 
     private static class ModelIterator implements Iterator<Model> {

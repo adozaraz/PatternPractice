@@ -119,6 +119,10 @@ public class Automobile implements Transport, Cloneable {
         public int hashCode() {
             return Objects.hash(name, cost);
         }
+
+        public String toString() {
+            return name + ": " + cost;
+        }
     }
 
     public List<String> getAllModelsNames() {
@@ -185,5 +189,9 @@ public class Automobile implements Transport, Cloneable {
 
     private void resizeArray() {
         models = Arrays.copyOf(models, size+arraySizeIncrease);
+    }
+
+    public Iterator<Model> iterator() {
+        return Arrays.stream(models).iterator();
     }
 }
