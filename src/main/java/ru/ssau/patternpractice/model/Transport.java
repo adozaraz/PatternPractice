@@ -2,6 +2,7 @@ package ru.ssau.patternpractice.model;
 
 import ru.ssau.patternpractice.exception.DuplicateModelNameException;
 import ru.ssau.patternpractice.exception.NoSuchModelNameException;
+import ru.ssau.patternpractice.model.visitor.Visitor;
 
 import java.util.List;
 
@@ -16,4 +17,5 @@ public interface Transport {
     void addNewModel(String name, Double cost) throws DuplicateModelNameException;
     void deleteModel(String name, Double cost) throws NoSuchModelNameException;
     int getModelsAmount();
+    void accept(Visitor visitor);
 }

@@ -2,6 +2,7 @@ package ru.ssau.patternpractice.model;
 
 import ru.ssau.patternpractice.exception.DuplicateModelNameException;
 import ru.ssau.patternpractice.exception.NoSuchModelNameException;
+import ru.ssau.patternpractice.model.visitor.Visitor;
 
 import java.util.*;
 
@@ -223,6 +224,11 @@ public class Motorcycle implements Transport, Cloneable {
     @Override
     public int getModelsAmount() {
         return size;
+    }
+
+    @Override
+    public void accept(Visitor visitor) {
+        visitor.visit(this);
     }
 
 

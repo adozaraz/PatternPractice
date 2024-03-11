@@ -4,82 +4,14 @@ package ru.ssau.patternpractice.model;
 import ru.ssau.patternpractice.exception.DuplicateModelNameException;
 import ru.ssau.patternpractice.exception.NoSuchModelNameException;
 import ru.ssau.patternpractice.model.command.PrintCommand;
+import ru.ssau.patternpractice.model.visitor.Visitor;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 import java.util.stream.IntStream;
 
-public class Automobile implements Transport, Cloneable {
-    private String brand;
-    private Model[] models;
-    private int size;
-
-    private int arraySizeIncrease;
-
-    private PrintCommand printCommand;
-
-    public Automobile(String brand, Integer size) {
-        this(brand, size, 10000.0, 20000.0, 10);
-    }
-
-    public Automobile(String brand, Integer size, int arraySizeIncrease) {
-        this(brand, size, 10000.0, 20000.0, arraySizeIncrease);
-    }
-
-    public Automobile(String brand, int size, double minCost, double maxCost, int arraySizeIncrease) {
-        Random r = new Random();
-        this.brand = brand;
-        this.size = size;
-        this.arraySizeIncrease = arraySizeIncrease;
-        this.models = new Model[size+arraySizeIncrease];
-        for (int i = 0; i < size; ++i) {
-            models[i] = new Model(brand + i, minCost + (maxCost - minCost) * r.nextDouble());
-        }
-    }
-
-    @Override
-    public Automobile clone() {
-        try {
-            Automobile copy = (Automobile) super.clone();
-            copy.models = models.clone();
-            for (int i = 0; i < size; ++i) {
-                copy.models[i] = copy.models[i].clone();
-            }
-            return copy;
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
-    }
-
-    public String getBrand() {
-        return this.brand;
-    }
-
-    public void setBrand(String brand) {
-        this.brand = brand;
-    }
-
-    @Override
-    public void setModelName(String oldModel, String newModel) throws NoSuchModelNameException, DuplicateModelNameException {
-        Model target = null;
-        for (int i = 0; i < size; ++i) {
-            if (models[i].name.equals(newModel)) {
-                throw new DuplicateModelNameException();
-            }
-            if (models[i].name.equals(oldModel) && target == null) {
-                target = models[i];
-            }
-        }
-        if (target != null) {
-            target.name = newModel;
-            return;
-        }
-        throw new NoSuchModelNameException();
-    }
-
-    private static class Model implements Cloneable {
+public class Automobile implements Transport, Cloneable, Serializable {
+    private static class Model implements Cloneable, Serializable {
         private String name;
         private Double cost;
 
@@ -129,6 +61,99 @@ public class Automobile implements Transport, Cloneable {
         public String toString() {
             return name + ": " + cost;
         }
+    }
+
+    private static class Memento {
+        byte[] savedState;
+
+        public void setAuto(Automobile automobile) {
+            try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                ObjectOutputStream objectWriter = new ObjectOutputStream(outputStream);
+                objectWriter.writeObject(automobile);
+                objectWriter.close();
+                savedState = outputStream.toByteArray();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public Automobile getAuto() {
+            try (ObjectInputStream stream = new ObjectInputStream(new ByteArrayInputStream(savedState))) {
+                return (Automobile) stream.readObject();
+            } catch (IOException | ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private String brand;
+    private Model[] models;
+    private int size;
+
+    private int arraySizeIncrease;
+
+    private transient PrintCommand printCommand;
+
+    private transient Memento savedState;
+
+    public Automobile(String brand, Integer size) {
+        this(brand, size, 10000.0, 20000.0, 10);
+    }
+
+    public Automobile(String brand, Integer size, int arraySizeIncrease) {
+        this(brand, size, 10000.0, 20000.0, arraySizeIncrease);
+    }
+
+    public Automobile(String brand, int size, double minCost, double maxCost, int arraySizeIncrease) {
+        Random r = new Random();
+        this.brand = brand;
+        this.size = size;
+        this.arraySizeIncrease = arraySizeIncrease;
+        this.models = new Model[size+arraySizeIncrease];
+        for (int i = 0; i < size; ++i) {
+            models[i] = new Model(brand + i, minCost + (maxCost - minCost) * r.nextDouble());
+        }
+        this.savedState = new Memento();
+    }
+
+    @Override
+    public Automobile clone() {
+        try {
+            Automobile copy = (Automobile) super.clone();
+            copy.models = models.clone();
+            for (int i = 0; i < size; ++i) {
+                copy.models[i] = copy.models[i].clone();
+            }
+            return copy;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
+    }
+
+    public String getBrand() {
+        return this.brand;
+    }
+
+    public void setBrand(String brand) {
+        this.brand = brand;
+    }
+
+    @Override
+    public void setModelName(String oldModel, String newModel) throws NoSuchModelNameException, DuplicateModelNameException {
+        Model target = null;
+        for (int i = 0; i < size; ++i) {
+            if (models[i].name.equals(newModel)) {
+                throw new DuplicateModelNameException();
+            }
+            if (models[i].name.equals(oldModel) && target == null) {
+                target = models[i];
+            }
+        }
+        if (target != null) {
+            target.name = newModel;
+            return;
+        }
+        throw new NoSuchModelNameException();
     }
 
     public List<String> getAllModelsNames() {
@@ -193,6 +218,11 @@ public class Automobile implements Transport, Cloneable {
         return size;
     }
 
+    @Override
+    public void accept(Visitor visitor) {
+        visitor.visit(this);
+    }
+
     private void resizeArray() {
         models = Arrays.copyOf(models, size+arraySizeIncrease);
     }
@@ -207,5 +237,17 @@ public class Automobile implements Transport, Cloneable {
 
     public void setPrintCommand(PrintCommand printCommand) {
         this.printCommand = printCommand;
+    }
+
+    public void createMemento() {
+        this.savedState.setAuto(this);
+    }
+
+    public void setMemento() {
+        Automobile savedAuto = this.savedState.getAuto();
+        this.brand = savedAuto.brand;
+        this.size = savedAuto.size;
+        this.models = savedAuto.models;
+        this.arraySizeIncrease = savedAuto.arraySizeIncrease;
     }
 }
