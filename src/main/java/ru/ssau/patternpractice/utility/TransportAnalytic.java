@@ -32,4 +32,8 @@ public class TransportAnalytic {
     public static Transport createInstance(String name, int size) throws DuplicateModelNameException {
         return factory.createInstance(name, size);
     }
+
+    public static Transport createSynchronizedInstance(String name, int size) throws DuplicateModelNameException {
+        return factory.createSynchronizedInstance(name, size);
+    }
 }

@@ -86,6 +86,31 @@ public class Automobile implements Transport, Cloneable, Serializable {
         }
     }
 
+    private static class ModelIterator implements Iterator<Model> {
+        private Model[] models;
+
+        private int currentModel;
+
+        public ModelIterator(Model[] models) {
+            this.models = models;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return currentModel < models.length;
+        }
+
+        @Override
+        public Model next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            Model result = models[currentModel];
+            ++currentModel;
+            return result;
+        }
+    }
+
     private String brand;
     private Model[] models;
     private int size;
@@ -223,12 +248,18 @@ public class Automobile implements Transport, Cloneable, Serializable {
         visitor.visit(this);
     }
 
+    @Override
+    public void clearAllModels() {
+        models = new Model[size+arraySizeIncrease];
+    }
+
     private void resizeArray() {
         models = Arrays.copyOf(models, size+arraySizeIncrease);
     }
 
+    @Override
     public Iterator<Model> iterator() {
-        return Arrays.stream(models).iterator();
+        return new ModelIterator(models);
     }
 
     public void print(OutputStream outputStream) throws IOException {

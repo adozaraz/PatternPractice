@@ -7,46 +7,77 @@ import ru.ssau.patternpractice.model.Automobile;
 import ru.ssau.patternpractice.model.Motorcycle;
 import ru.ssau.patternpractice.model.Transport;
 import ru.ssau.patternpractice.model.adapter.ArrayAdapter;
+import ru.ssau.patternpractice.model.chain_of_responsibility.MultiLineStringChainWriter;
+import ru.ssau.patternpractice.model.chain_of_responsibility.OneStringChainWriter;
+import ru.ssau.patternpractice.model.chain_of_responsibility.TransportChain;
+import ru.ssau.patternpractice.model.command.OneStringPrintCommand;
+import ru.ssau.patternpractice.model.command.PrintCommand;
 import ru.ssau.patternpractice.model.factory.MotoFactory;
+import ru.ssau.patternpractice.model.strategy.CountStrategy;
+import ru.ssau.patternpractice.model.strategy.FrequencyCountStrategy;
+import ru.ssau.patternpractice.model.visitor.PrintVisitor;
+import ru.ssau.patternpractice.model.visitor.Visitor;
 import ru.ssau.patternpractice.proxy.MultiplicationProxy;
 import ru.ssau.patternpractice.utility.TransportAnalytic;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.*;
+import java.util.*;
+import java.util.function.BiConsumer;
 
 public class Main {
     public static void main(String[] args) throws DuplicateModelNameException, NoSuchModelNameException, IOException {
-//        System.out.println("Проверка загрузки AppConfig");
-//        AppConfig config = AppConfig.getInstance();
-//        String firstModel = config.getProperty("firstModel");
-//        String secondModel = config.getProperty("secondModel");
-//        System.out.printf("First model: %s, Second model: %s%n", firstModel, secondModel);
-//
-//        Transport transport = TransportAnalytic.createInstance(firstModel, 10);
-//
-//        doTestsOnTransport(transport, firstModel);
-//        testAutomobileClone((Automobile) transport, firstModel);
-//
-//        System.out.println("Проверим мотоциклы");
-//        TransportAnalytic.setTransportFactory(new MotoFactory());
-//
-//        transport = TransportAnalytic.createInstance(secondModel, 4);
-//
-//        doTestsOnTransport(transport, secondModel);
-//        testMotorcycleClone((Motorcycle) transport, secondModel);
-        ArrayAdapter adapter = new ArrayAdapter();
+/*        System.out.println("Проверка загрузки AppConfig");
+       AppConfig config = AppConfig.getInstance();
+       String firstModel = config.getProperty("firstModel");
+       String secondModel = config.getProperty("secondModel");
+       System.out.printf("First model: %s, Second model: %s%n", firstModel, secondModel);
+
+       Transport transport = TransportAnalytic.createInstance(firstModel, 10);
+
+       doTestsOnTransport(transport, firstModel);
+       testAutomobileClone((Automobile) transport, firstModel);
+
+       System.out.println("Проверим мотоциклы");
+       TransportAnalytic.setTransportFactory(new MotoFactory());
+
+       transport = TransportAnalytic.createInstance(secondModel, 4);
+
+        doTestsOnTransport(transport, secondModel);
+        testMotorcycleClone((Motorcycle) transport, secondModel);*/
         AppConfig config = AppConfig.getInstance();
         String firstModel = config.getProperty("firstModel");
-        Transport transport = TransportAnalytic.createInstance(firstModel, 10);
-        adapter.write(transport.getAllModelsNames());
-        String data = adapter.toString();
-        System.out.println("Вывод адаптера: ");
+        Automobile transport = (Automobile) TransportAnalytic.createInstance(firstModel, 10);
+        System.out.println("------------CHAIN OF RESPONSIBILITIES------------");
+        TransportChain chain = new OneStringChainWriter(new MultiLineStringChainWriter());
+        chain.handleTransportModels(transport);
+        System.out.println("------------COMMAND------------");
+        PrintCommand command = new OneStringPrintCommand();
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        command.print(transport.getAllModelsNames(), outputStream);
+        String data = outputStream.toString();
         System.out.println(data);
-        MultiplicationProxy proxy = new MultiplicationProxy();
-        double result = proxy.multiply(4.0, 2.5);
-        System.out.println("Результат умножения: " + result);
+        for (Object obj : transport) {
+            System.out.println(obj);
+        }
+        System.out.println("------------MEMENTO------------");
+        transport.createMemento();
+        transport.addNewModel("aaa", 123.0);
+        System.out.println(transport.getModelsAmount());
+        transport.setMemento();
+        System.out.println(transport.getModelsAmount());
+        System.out.println("------------STRATEGY------------");
+        File file = new File(args[0]);
+        Scanner scanner = new Scanner(file);
+        List<Integer> integerList = new ArrayList<>();
+        while (scanner.hasNextLine()) {
+            integerList.add(Integer.parseInt(scanner.nextLine()));
+        }
+        CountStrategy strategy = new FrequencyCountStrategy();
+        Map<Integer, Integer> counter = strategy.count(integerList);
+        counter.forEach((integer, integer2) -> System.out.println(integer + ": " + integer2));
+        System.out.println("------------VISITOR------------");
+        Visitor visitor = new PrintVisitor();
+        visitor.visit(transport);
     }
 
     public static void doTestsOnTransport(Transport transport, String transportName) throws DuplicateModelNameException, NoSuchModelNameException {

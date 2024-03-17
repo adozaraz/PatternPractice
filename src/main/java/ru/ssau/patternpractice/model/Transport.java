@@ -4,9 +4,10 @@ import ru.ssau.patternpractice.exception.DuplicateModelNameException;
 import ru.ssau.patternpractice.exception.NoSuchModelNameException;
 import ru.ssau.patternpractice.model.visitor.Visitor;
 
+import java.util.Iterator;
 import java.util.List;
 
-public interface Transport {
+public interface Transport extends Iterable {
     String getBrand();
     void setBrand(String brand);
     void setModelName(String oldModel, String newModel) throws NoSuchModelNameException, DuplicateModelNameException;
@@ -18,4 +19,6 @@ public interface Transport {
     void deleteModel(String name, Double cost) throws NoSuchModelNameException;
     int getModelsAmount();
     void accept(Visitor visitor);
+
+    void clearAllModels();
 }

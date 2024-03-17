@@ -3,8 +3,12 @@ package ru.ssau.patternpractice.model.decorators;
 import ru.ssau.patternpractice.exception.DuplicateModelNameException;
 import ru.ssau.patternpractice.exception.NoSuchModelNameException;
 import ru.ssau.patternpractice.model.Transport;
+import ru.ssau.patternpractice.model.visitor.Visitor;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.function.Consumer;
 
 public class SynchronizedTransport extends BaseTransportDecorator {
     public SynchronizedTransport(Transport wrapped) {
@@ -79,5 +83,32 @@ public class SynchronizedTransport extends BaseTransportDecorator {
         synchronized (wrapped) {
             return wrapped.getModelsAmount();
         }
+    }
+
+    @Override
+    public void accept(Visitor visitor) {
+        synchronized (wrapped) {
+            wrapped.accept(visitor);
+        }
+    }
+
+    @Override
+    public void clearAllModels() {
+
+    }
+
+    @Override
+    public Iterator iterator() {
+        return null;
+    }
+
+    @Override
+    public void forEach(Consumer action) {
+        super.forEach(action);
+    }
+
+    @Override
+    public Spliterator spliterator() {
+        return super.spliterator();
     }
 }

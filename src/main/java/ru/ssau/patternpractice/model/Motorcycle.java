@@ -231,5 +231,14 @@ public class Motorcycle implements Transport, Cloneable {
         visitor.visit(this);
     }
 
+    @Override
+    public void clearAllModels() {
+        modelHead = null;
+    }
+
+    @Override
+    public Iterator iterator() {
+        return modelHead.iterator();
+    }
 
 }
