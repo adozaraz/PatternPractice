@@ -6,6 +6,7 @@ import ru.ssau.patternpractice.model.visitor.Visitor;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 
 public interface Transport extends Iterable {
     String getBrand();
@@ -21,4 +22,6 @@ public interface Transport extends Iterable {
     void accept(Visitor visitor);
 
     void clearAllModels();
+    void setId(UUID id);
+    UUID getId();
 }

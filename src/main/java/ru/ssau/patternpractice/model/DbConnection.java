@@ -17,29 +17,30 @@ public class DbConnection {
     public DbConnection() throws SQLException {
         this("application.properties");
     }
-    private DbConnection(Connection connection) {
+    public DbConnection(Connection connection) {
         this.connection = connection;
     }
 
-    private DbConnection(String fileProperties) throws SQLException {
+    public DbConnection(String fileProperties) throws SQLException {
         this.props = new Properties();
+        setDatabaseConfig(fileProperties);
+    }
+
+    public void setDatabaseConfig(String fileProperties) throws SQLException {
+        if (connection != null) {
+            this.closeConnection();
+        }
         this.fileProperties = fileProperties;
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(fileProperties)) {
             props.load(inputStream);
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public static DbConnection getInstance() throws SQLException {
-        if (INSTANCE == null) {
-            INSTANCE = new DbConnection();
-        }
-        return INSTANCE;
+        connectToServer();
     }
 
     public void connectToServer() throws SQLException {
-        connection = DriverManager.getConnection(props.getProperty("db.url"), props.getProperty("db.user"), props.getProperty("db.password"));
+        connection = DriverManager.getConnection(props.getProperty("db.url"), props.getProperty("db.user"), props.getProperty("db.password")); //ПОМЕНЯТЬ БД
     }
 
     public void closeConnection() throws SQLException {

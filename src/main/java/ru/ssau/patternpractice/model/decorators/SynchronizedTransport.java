@@ -8,6 +8,7 @@ import ru.ssau.patternpractice.model.visitor.Visitor;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 public class SynchronizedTransport extends BaseTransportDecorator {
@@ -95,6 +96,16 @@ public class SynchronizedTransport extends BaseTransportDecorator {
     @Override
     public void clearAllModels() {
 
+    }
+
+    @Override
+    public void setId(UUID id) {
+
+    }
+
+    @Override
+    public UUID getId() {
+        return null;
     }
 
     @Override

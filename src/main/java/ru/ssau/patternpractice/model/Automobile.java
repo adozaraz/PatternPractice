@@ -121,6 +121,16 @@ public class Automobile implements Transport, Cloneable, Serializable {
 
     private transient Memento savedState;
 
+    private UUID id;
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
     public Automobile(String brand, Integer size) {
         this(brand, size, 10000.0, 20000.0, 10);
     }
@@ -262,8 +272,8 @@ public class Automobile implements Transport, Cloneable, Serializable {
         return new ModelIterator(models);
     }
 
-    public void print(OutputStream outputStream) throws IOException {
-        this.printCommand.print(this.getAllModelsNames(), outputStream);
+    public void print() throws IOException {
+        this.printCommand.print(this);
     }
 
     public void setPrintCommand(PrintCommand printCommand) {

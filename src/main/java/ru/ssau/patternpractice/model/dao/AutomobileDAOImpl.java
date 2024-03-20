@@ -15,9 +15,10 @@ import java.util.UUID;
 public class AutomobileDAOImpl implements AutomobileDAO {
 
     private enum SQLQuery {
-        GET("SELECT * FROM transport WHERE id = (?)"),
-        INSERT("INSERT INTO transport (id, brand, modelsAmount) VALUES ((?), (?), (?)) RETURNING id"),
-        DELETE("DELETE FROM transport WHERE id = (?)");
+        GET("SELECT * FROM transport WHERE id = (?)::UUID"),
+        INSERT("INSERT INTO transport (id, brand, modelsAmount) VALUES ((?), (?), (?))"),
+        DELETE("DELETE FROM transport WHERE id = (?)"),
+        CREATE_TABLE("CREATE TABLE IF NOT EXISTS transport (id VARCHAR(36) PRIMARY KEY, brand VARCHAR, modelsAmount INTEGER)");
 
         final String QUERY;
 
@@ -30,19 +31,55 @@ public class AutomobileDAOImpl implements AutomobileDAO {
 
     private TransportModelDAO transportModelDAO;
 
-    public AutomobileDAOImpl() throws SQLException {
-        this.connection = DbConnection.getInstance();
-        transportModelDAO = new TransportModelDAOImpl();
+    private static AutomobileDAOImpl INSTANCE = null;
+
+    private AutomobileDAOImpl() throws SQLException {
+        this.connection = new DbConnection();
+        createTableIfNotExists();
+        transportModelDAO = TransportModelDAOImpl.getInstance();
+    }
+
+    private AutomobileDAOImpl(String fileProperties) throws SQLException {
+        this.connection = new DbConnection(fileProperties);
+        createTableIfNotExists();
+        transportModelDAO = TransportModelDAOImpl.getInstance();
+    }
+
+    private AutomobileDAOImpl(String fileProperties, String transportModelFileProperties) throws SQLException {
+        this.connection = new DbConnection(fileProperties);
+        createTableIfNotExists();
+        transportModelDAO = TransportModelDAOImpl.getInstance(transportModelFileProperties);
+    }
+
+    public static AutomobileDAOImpl getInstance() throws SQLException {
+        if (INSTANCE == null) {
+            INSTANCE = new AutomobileDAOImpl();
+        }
+        return INSTANCE;
+    }
+
+    public static AutomobileDAOImpl getInstance(String fileProperties) throws SQLException {
+        if (INSTANCE == null) {
+            INSTANCE = new AutomobileDAOImpl(fileProperties);
+        }
+        return INSTANCE;
+    }
+
+    public static AutomobileDAOImpl getInstance(String fileProperties, String transportModelFileProperties) throws SQLException {
+        if (INSTANCE == null) {
+            INSTANCE = new AutomobileDAOImpl(fileProperties, transportModelFileProperties);
+        }
+        return INSTANCE;
     }
 
     @Override
     public boolean create(Transport transport) {
         boolean result = false;
-        UUID id = UUID.randomUUID();
+        UUID id = (transport.getId() != null) ? transport.getId() : UUID.randomUUID();
         try (PreparedStatement statement = connection.getPreparedStatement(SQLQuery.INSERT.QUERY)) {
             statement.setString(1, id.toString());
             statement.setString(2, transport.getBrand());
-            statement.setString(3, String.valueOf(transport.getModelsAmount()));
+            statement.setInt(3, transport.getModelsAmount());
             result = statement.executeQuery().next();
             List<String> modelNames = transport.getAllModelsNames();
             List<Double> modelCost = transport.getAllModelsCost();
@@ -65,9 +102,9 @@ public class AutomobileDAOImpl implements AutomobileDAO {
             final ResultSet rs = statement.executeQuery();
             if (rs.next()) {
                 String brand = rs.getString("brand");
-                String modelsAmount = rs.getString("modelsAmount");
+                Integer modelsAmount = rs.getInt("modelsAmount");
                 List<ModelDAO> models = transportModelDAO.getModelsForConcreteTransport(uuid);
-                Automobile auto = new Automobile(brand, Integer.parseInt(modelsAmount));
+                Automobile auto = new Automobile(brand, modelsAmount);
                 auto.clearAllModels();
                 for (ModelDAO model : models) {
                     auto.addNewModel(model.getName(), model.getCost());
@@ -104,4 +141,27 @@ public class AutomobileDAOImpl implements AutomobileDAO {
         return result;
     }
 
+    @Override
+    public void closeConnection() throws SQLException {
+        connection.closeConnection();
+        transportModelDAO.closeConnection();
+    }
+
+    @Override
+    public void changeDatabaseConfig(String fileProperties) throws SQLException {
+        connection.setDatabaseConfig(fileProperties);
+        createTableIfNotExists();
+    }
+
+    private void createTableIfNotExists() {
+        try (PreparedStatement statement = connection.getPreparedStatement(SQLQuery.CREATE_TABLE.QUERY)) {
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public TransportModelDAO getTransportModelDAO() {
+        return transportModelDAO;
+    }
 }

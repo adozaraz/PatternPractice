@@ -11,6 +11,16 @@ public class Motorcycle implements Transport, Cloneable {
     private Model modelHead;
     private int size = 0;
 
+    private UUID id;
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
     public Motorcycle(String brand, int size) throws DuplicateModelNameException {
         this(brand, size, 10000.0, 20000.0);
     }

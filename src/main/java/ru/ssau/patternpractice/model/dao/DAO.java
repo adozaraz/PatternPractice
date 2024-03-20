@@ -1,5 +1,6 @@
 package ru.ssau.patternpractice.model.dao;
 
+import java.sql.SQLException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -8,4 +9,6 @@ public interface DAO<Entity, Key> {
     Optional<Entity> read(Key key);
     boolean update(Entity entity);
     boolean delete(UUID uuid);
+    void closeConnection() throws SQLException;
+    void changeDatabaseConfig(String fileProperties) throws SQLException;
 }

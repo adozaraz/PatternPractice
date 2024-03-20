@@ -4,28 +4,28 @@ import ru.ssau.patternpractice.config.AppConfig;
 import ru.ssau.patternpractice.exception.DuplicateModelNameException;
 import ru.ssau.patternpractice.exception.NoSuchModelNameException;
 import ru.ssau.patternpractice.model.Automobile;
+import ru.ssau.patternpractice.model.DbConnection;
 import ru.ssau.patternpractice.model.Motorcycle;
 import ru.ssau.patternpractice.model.Transport;
-import ru.ssau.patternpractice.model.adapter.ArrayAdapter;
 import ru.ssau.patternpractice.model.chain_of_responsibility.MultiLineStringChainWriter;
 import ru.ssau.patternpractice.model.chain_of_responsibility.OneStringChainWriter;
 import ru.ssau.patternpractice.model.chain_of_responsibility.TransportChain;
+import ru.ssau.patternpractice.model.command.MultiLinePrintCommand;
 import ru.ssau.patternpractice.model.command.OneStringPrintCommand;
 import ru.ssau.patternpractice.model.command.PrintCommand;
-import ru.ssau.patternpractice.model.factory.MotoFactory;
+import ru.ssau.patternpractice.model.dao.*;
 import ru.ssau.patternpractice.model.strategy.CountStrategy;
 import ru.ssau.patternpractice.model.strategy.FrequencyCountStrategy;
 import ru.ssau.patternpractice.model.visitor.PrintVisitor;
 import ru.ssau.patternpractice.model.visitor.Visitor;
-import ru.ssau.patternpractice.proxy.MultiplicationProxy;
 import ru.ssau.patternpractice.utility.TransportAnalytic;
 
 import java.io.*;
+import java.sql.SQLException;
 import java.util.*;
-import java.util.function.BiConsumer;
 
 public class Main {
-    public static void main(String[] args) throws DuplicateModelNameException, NoSuchModelNameException, IOException {
+    public static void main(String[] args) throws DuplicateModelNameException, NoSuchModelNameException, IOException, SQLException {
 /*        System.out.println("Проверка загрузки AppConfig");
        AppConfig config = AppConfig.getInstance();
        String firstModel = config.getProperty("firstModel");
@@ -44,6 +44,8 @@ public class Main {
 
         doTestsOnTransport(transport, secondModel);
         testMotorcycleClone((Motorcycle) transport, secondModel);*/
+
+
         AppConfig config = AppConfig.getInstance();
         String firstModel = config.getProperty("firstModel");
         Automobile transport = (Automobile) TransportAnalytic.createInstance(firstModel, 10);
@@ -51,33 +53,46 @@ public class Main {
         TransportChain chain = new OneStringChainWriter(new MultiLineStringChainWriter());
         chain.handleTransportModels(transport);
         System.out.println("------------COMMAND------------");
-        PrintCommand command = new OneStringPrintCommand();
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        command.print(transport.getAllModelsNames(), outputStream);
-        String data = outputStream.toString();
-        System.out.println(data);
-        for (Object obj : transport) {
-            System.out.println(obj);
-        }
+        PrintCommand command = new MultiLinePrintCommand();
+        command.print(transport);
+        System.out.println("------------Iterator-----------");
+
         System.out.println("------------MEMENTO------------");
         transport.createMemento();
         transport.addNewModel("aaa", 123.0);
-        System.out.println(transport.getModelsAmount());
+        System.out.println("ДО:");
+        Iterator ait = transport.iterator();
+        while (ait.hasNext()) {
+            System.out.println(ait.next());
+        }
         transport.setMemento();
+        System.out.println("После:");
+        ait = transport.iterator();
+        while (ait.hasNext()) {
+            System.out.println(ait.next());
+        }
         System.out.println(transport.getModelsAmount());
         System.out.println("------------STRATEGY------------");
-        File file = new File(args[0]);
-        Scanner scanner = new Scanner(file);
-        List<Integer> integerList = new ArrayList<>();
-        while (scanner.hasNextLine()) {
-            integerList.add(Integer.parseInt(scanner.nextLine()));
-        }
+        generateFile(args[0], 30);
+        List<Integer> integerList = getSerializedFile(args[0]);
         CountStrategy strategy = new FrequencyCountStrategy();
         Map<Integer, Integer> counter = strategy.count(integerList);
         counter.forEach((integer, integer2) -> System.out.println(integer + ": " + integer2));
         System.out.println("------------VISITOR------------");
         Visitor visitor = new PrintVisitor();
         visitor.visit(transport);
+        System.out.println("---------DAO----------");
+        AutomobileDAO auto = AutomobileDAOImpl.getInstance("dbConfig.properties", "mysql.properties");
+        transport.setId(UUID.randomUUID());
+        auto.create(transport);
+        Optional<Transport> potentialAuto = auto.read(transport.getId());
+        potentialAuto.ifPresent(value -> System.out.println(value.getBrand()));
+        TransportModelDAO models = TransportModelDAOImpl.getInstance();
+        List<ModelDAO> potent = models.getModelsForConcreteTransport(transport.getId());
+        for (ModelDAO mod : potent) {
+            System.out.println("Name: " + mod.getName() + " Price: " + mod.getCost());
+        }
+        auto.closeConnection();
     }
 
     public static void doTestsOnTransport(Transport transport, String transportName) throws DuplicateModelNameException, NoSuchModelNameException {
@@ -153,5 +168,33 @@ public class Main {
         orig.getAllModelsNames().forEach(System.out::println);
         System.out.println("Дешёвая копия");
         clone.getAllModelsNames().forEach(System.out::println);
+    }
+
+    public static void generateFile(String fileName, int size) {
+        List<Integer> arr = new ArrayList<>();
+        Random r = new Random();
+        for (int i = 0; i < size; ++i) {
+            arr.add(r.nextInt(10) + 1);
+        }
+        try (FileOutputStream outputStream = new FileOutputStream(fileName)) {
+            ObjectOutputStream objectWriter = new ObjectOutputStream(outputStream);
+            objectWriter.writeObject(arr);
+            objectWriter.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static List<Integer> getSerializedFile(String fileName) {
+        try (FileInputStream fileInputStream = new FileInputStream(fileName)) {
+            ObjectInputStream in = new ObjectInputStream(fileInputStream);
+            List<Integer> result = (List<Integer>) in.readObject();
+            in.close();
+            return result;
+        } catch (FileNotFoundException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

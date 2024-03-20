@@ -19,10 +19,14 @@ public class MultiLineStringChainWriter implements TransportChain {
 
     @Override
     public void handleTransportModels(Transport transport) throws IOException {
-        FileWriter fileWriter = new FileWriter("transportModels.txt");
-        try (PrintWriter writer = new PrintWriter(fileWriter)) {
-            for (String model : transport.getAllModelsNames()) {
-                writer.println(model);
+        if (transport.getModelsAmount() <= 3) {
+            this.nextChain.handleTransportModels(transport);
+        } else {
+            FileWriter fileWriter = new FileWriter("transportModels.txt");
+            try (PrintWriter writer = new PrintWriter(fileWriter)) {
+                for (String model : transport.getAllModelsNames()) {
+                    writer.println(model);
+                }
             }
         }
     }
