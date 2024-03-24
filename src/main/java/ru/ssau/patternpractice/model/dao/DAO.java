@@ -10,5 +10,4 @@ public interface DAO<Entity, Key> {
     boolean update(Entity entity);
     boolean delete(UUID uuid);
     void closeConnection() throws SQLException;
-    void changeDatabaseConfig(String fileProperties) throws SQLException;
 }

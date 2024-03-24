@@ -1,9 +1,6 @@
 package ru.ssau.patternpractice.model.dao;
 
-import ru.ssau.patternpractice.exception.DuplicateModelNameException;
-import ru.ssau.patternpractice.model.Automobile;
 import ru.ssau.patternpractice.model.DbConnection;
-import ru.ssau.patternpractice.model.Transport;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -13,14 +10,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public class TransportModelDAOImpl implements TransportModelDAO {
+public class TransportModelDAOMySQLImpl implements TransportModelDAO {
     private enum SQLQuery {
         GET("SELECT * FROM transportModel WHERE id = (?)"),
         GET_BY_OWNER("SELECT * FROM transportModel WHERE ownerId = (?)"),
-        INSERT("INSERT INTO transportModel (id, ownerId, name, cost) VALUES ((?), (?), (?), (?))"),
+        INSERT("INSERT INTO transportModel VALUES (?, ?, ?, ?)"),
         DELETE("DELETE FROM transportModel WHERE id = (?)"),
         DELETE_BY_OWNER("DELETE FROM transportModel WHERE ownerId = (?)"),
-        CREATE_TABLE("CREATE TABLE IF NOT EXISTS transportModel (id VARCHAR(36) PRIMARY KEY, ownerId VARCHAR(36), name VARCHAR(255), cost DECIMAL(10, 2))");
+        CREATE_TABLE("CREATE TABLE IF NOT EXISTS transportModel (id VARCHAR(255) PRIMARY KEY, ownerId VARCHAR(255), name VARCHAR(255), cost DECIMAL)");
 
         final String QUERY;
 
@@ -31,28 +28,28 @@ public class TransportModelDAOImpl implements TransportModelDAO {
 
     private DbConnection connection;
 
-    private static TransportModelDAOImpl INSTANCE = null;
+    private static TransportModelDAOMySQLImpl INSTANCE = null;
 
-    private TransportModelDAOImpl() throws SQLException {
+    private TransportModelDAOMySQLImpl() throws SQLException {
         this.connection = new DbConnection();
         createTableIfNotExists();
     }
 
-    private TransportModelDAOImpl(String fileProperties) throws SQLException {
+    private TransportModelDAOMySQLImpl(String fileProperties) throws SQLException {
         this.connection = new DbConnection(fileProperties);
         createTableIfNotExists();
     }
 
-    public static TransportModelDAOImpl getInstance() throws SQLException {
+    public static TransportModelDAOMySQLImpl getInstance() throws SQLException {
         if (INSTANCE == null) {
-            INSTANCE = new TransportModelDAOImpl();
+            INSTANCE = new TransportModelDAOMySQLImpl();
         }
         return INSTANCE;
     }
 
-    public static TransportModelDAOImpl getInstance(String fileProperties) throws SQLException {
+    public static TransportModelDAOMySQLImpl getInstance(String fileProperties) throws SQLException {
         if (INSTANCE == null) {
-            INSTANCE = new TransportModelDAOImpl(fileProperties);
+            INSTANCE = new TransportModelDAOMySQLImpl(fileProperties);
         }
         return INSTANCE;
     }
@@ -62,7 +59,7 @@ public class TransportModelDAOImpl implements TransportModelDAO {
         int result = 0;
         try (PreparedStatement statement = connection.getPreparedStatement(SQLQuery.INSERT.QUERY)) {
             statement.setString(1, UUID.randomUUID().toString());
-            statement.setObject(2, modelDAO.getOwnerId());
+            statement.setString(2, modelDAO.getOwnerId().toString());
             statement.setString(3, modelDAO.getName());
             statement.setDouble(4, modelDAO.getCost());
             result = statement.executeUpdate();
@@ -123,12 +120,6 @@ public class TransportModelDAOImpl implements TransportModelDAO {
     @Override
     public void closeConnection() throws SQLException {
         connection.closeConnection();
-    }
-
-    @Override
-    public void changeDatabaseConfig(String fileProperties) throws SQLException {
-        connection.setDatabaseConfig(fileProperties);
-        createTableIfNotExists();
     }
 
     @Override

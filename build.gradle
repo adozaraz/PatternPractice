@@ -24,8 +24,7 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     implementation group: 'org.postgresql', name: 'postgresql', version: '42.7.3'
     implementation group: 'com.mysql', name: 'mysql-connector-j', version: '8.3.0'
-
-
+    implementation group: 'eu.verdelhan', name: 'ta4j', version: '0.9'
 }
 
 test {

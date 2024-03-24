@@ -12,13 +12,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public class AutomobileDAOImpl implements AutomobileDAO {
+public class AutomobileDAOPostgresqlImpl implements AutomobileDAO {
 
     private enum SQLQuery {
         GET("SELECT * FROM transport WHERE id = (?)::UUID"),
-        INSERT("INSERT INTO transport (id, brand, modelsAmount) VALUES ((?), (?), (?))"),
-        DELETE("DELETE FROM transport WHERE id = (?)"),
-        CREATE_TABLE("CREATE TABLE IF NOT EXISTS transport (id VARCHAR(36) PRIMARY KEY, brand VARCHAR, modelsAmount INTEGER)");
+        INSERT("INSERT INTO transport (id, brand, modelsAmount) VALUES ((?), (?), (?)) returning id"),
+        DELETE("DELETE FROM transport WHERE id = (?)::UUID"),
+        CREATE_TABLE("CREATE TABLE IF NOT EXISTS transport (id UUID PRIMARY KEY, brand VARCHAR, modelsAmount INTEGER)");
 
         final String QUERY;
 
@@ -31,43 +31,43 @@ public class AutomobileDAOImpl implements AutomobileDAO {
 
     private TransportModelDAO transportModelDAO;
 
-    private static AutomobileDAOImpl INSTANCE = null;
+    private static AutomobileDAOPostgresqlImpl INSTANCE = null;
 
-    private AutomobileDAOImpl() throws SQLException {
+    private AutomobileDAOPostgresqlImpl() throws SQLException {
         this.connection = new DbConnection();
         createTableIfNotExists();
-        transportModelDAO = TransportModelDAOImpl.getInstance();
+        transportModelDAO = TransportModelDAOMySQLImpl.getInstance();
     }
 
-    private AutomobileDAOImpl(String fileProperties) throws SQLException {
+    private AutomobileDAOPostgresqlImpl(String fileProperties) throws SQLException {
         this.connection = new DbConnection(fileProperties);
         createTableIfNotExists();
-        transportModelDAO = TransportModelDAOImpl.getInstance();
+        transportModelDAO = TransportModelDAOMySQLImpl.getInstance();
     }
 
-    private AutomobileDAOImpl(String fileProperties, String transportModelFileProperties) throws SQLException {
+    private AutomobileDAOPostgresqlImpl(String fileProperties, String transportModelFileProperties) throws SQLException {
         this.connection = new DbConnection(fileProperties);
         createTableIfNotExists();
-        transportModelDAO = TransportModelDAOImpl.getInstance(transportModelFileProperties);
+        transportModelDAO = TransportModelDAOMySQLImpl.getInstance(transportModelFileProperties);
     }
 
-    public static AutomobileDAOImpl getInstance() throws SQLException {
+    public static AutomobileDAOPostgresqlImpl getInstance() throws SQLException {
         if (INSTANCE == null) {
-            INSTANCE = new AutomobileDAOImpl();
+            INSTANCE = new AutomobileDAOPostgresqlImpl();
         }
         return INSTANCE;
     }
 
-    public static AutomobileDAOImpl getInstance(String fileProperties) throws SQLException {
+    public static AutomobileDAOPostgresqlImpl getInstance(String fileProperties) throws SQLException {
         if (INSTANCE == null) {
-            INSTANCE = new AutomobileDAOImpl(fileProperties);
+            INSTANCE = new AutomobileDAOPostgresqlImpl(fileProperties);
         }
         return INSTANCE;
     }
 
-    public static AutomobileDAOImpl getInstance(String fileProperties, String transportModelFileProperties) throws SQLException {
+    public static AutomobileDAOPostgresqlImpl getInstance(String fileProperties, String transportModelFileProperties) throws SQLException {
         if (INSTANCE == null) {
-            INSTANCE = new AutomobileDAOImpl(fileProperties, transportModelFileProperties);
+            INSTANCE = new AutomobileDAOPostgresqlImpl(fileProperties, transportModelFileProperties);
         }
         return INSTANCE;
     }
@@ -77,7 +77,7 @@ public class AutomobileDAOImpl implements AutomobileDAO {
         boolean result = false;
         UUID id = (transport.getId() != null) ? transport.getId() : UUID.randomUUID();
         try (PreparedStatement statement = connection.getPreparedStatement(SQLQuery.INSERT.QUERY)) {
-            statement.setString(1, id.toString());
+            statement.setObject(1, id);
             statement.setString(2, transport.getBrand());
             statement.setInt(3, transport.getModelsAmount());
             result = statement.executeQuery().next();
@@ -97,7 +97,7 @@ public class AutomobileDAOImpl implements AutomobileDAO {
         Optional<Transport> result = Optional.empty();
 
         try (PreparedStatement statement = connection.getPreparedStatement(SQLQuery.GET.QUERY)) {
-            statement.setString(1, uuid.toString());
+            statement.setObject(1, uuid);
 
             final ResultSet rs = statement.executeQuery();
             if (rs.next()) {
@@ -130,7 +130,7 @@ public class AutomobileDAOImpl implements AutomobileDAO {
         boolean result = false;
 
         try (PreparedStatement statement = connection.getPreparedStatement(SQLQuery.DELETE.QUERY)) {
-            statement.setString(1, uuid.toString());
+            statement.setObject(1, uuid);
 
             result = statement.executeQuery().next();
             transportModelDAO.deleteByOwnerId(uuid);
@@ -145,12 +145,6 @@ public class AutomobileDAOImpl implements AutomobileDAO {
     public void closeConnection() throws SQLException {
         connection.closeConnection();
         transportModelDAO.closeConnection();
-    }
-
-    @Override
-    public void changeDatabaseConfig(String fileProperties) throws SQLException {
-        connection.setDatabaseConfig(fileProperties);
-        createTableIfNotExists();
     }
 
     private void createTableIfNotExists() {
